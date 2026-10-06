@@ -33,7 +33,7 @@ By combining roadside assistance, mechanic coordination, real-time assistance, s
 
 | Name | Email |
 |---|---|
-| **Rajat Tailor** | rajatt1003@ |
+| **Rajat Tailor** | rajatt1003@gmail.com |
 | **Sahil Saini** | aisci.sahilsaini@gmail.com |
 | **Sakshi Singh** | sakshisingh181817@gmail.com |
 | **Nitin Singh Shekhawat** | nitinsinghshekhawatji555@gmail.com |
