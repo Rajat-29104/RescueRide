@@ -1,257 +1,215 @@
-# RoadRescue: A Secure Roadside Assistance Platform
+# 🚗 RescueRide
 
-> **An intelligent, real-time emergency dispatch and diagnostic coordination platform connecting stranded drivers with nearby verified mechanics in Ghana.**
+<p align="center">
+  <strong>Roadside Assistance and Mechanic Coordination System</strong>
+</p>
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-blue?style=flat-square&logo=react)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%20%2B%20PostGIS-3ecf8e?style=flat-square&logo=supabase)](https://supabase.com/)
-
----
-
-## 1. Project Overview & Problem Statement
-
-### The Problem
-Vehicle breakdowns in developing urban ecosystems like Accra, Ghana are typically stressful, unpredictable, and insecure. Stranded motorists are forced to rely on unverified phone contacts, roadside negotiations, long response delays, and uncertain mechanic competencies. Traditional roadside assistance lacks real-time coordination, transparent location tracking, and systematic diagnostic triage.
-
-### The Solution
-**RoadRescue** provides an end-to-end, real-time roadside assistance ecosystem:
-* **Sub-Second Spatial Dispatch:** Automated matching using PostGIS spatial indexing (`ST_DWithin`, `ST_Distance`) over active mechanic coordinates within a 10 km radius.
-* **Multi-Tier AI Diagnostics:** Automated breakdown assessment utilizing a prioritized multi-provider fallback engine (Google Gemini $\to$ Groq Llama-3.3 $\to$ OpenRouter $\to$ Offline Rule-Based Expert System).
-* **Live Bidirectional Tracking:** Supabase Postgres Change Data Capture (CDC) and WebSocket subscriptions for live GPS tracking from `accepted` $\to$ `en_route` $\to$ `arrived` $\to$ `in_progress` $\to$ `completed`.
-* **Verified Specialist Network:** Administrative credential verification with database-level email blacklisting (`blocked_emails`) and soft-cascade account termination.
-* **Alternative Commute Integration:** Direct escape gateway to urban ride-hailing services (Uber, Bolt, Yango) if on-site repair is infeasible.
+<p align="center">
+  <img src="https://img.shields.io/badge/Project-AutoNexus-1565C0?style=for-the-badge" alt="Project">
+  <img src="https://img.shields.io/badge/Project_Code-PBL2627--CSE--C--060-6A1B9A?style=for-the-badge" alt="Project Code">
+  <img src="https://img.shields.io/badge/Academic_Year-2026--27-00897B?style=for-the-badge" alt="Academic Year">
+  <img src="https://img.shields.io/badge/Team-4_Members-E65100?style=for-the-badge" alt="Team">
+</p>
 
 ---
 
-## 2. Key Features by User Role
+# 🚘 About the Project
 
-```mermaid
-graph TD
-    subgraph Driver [" Driver Role"]
-        D1[Interactive Map & Geolocation Pin]
-        D2[Multi-Tier AI Breakdown Diagnostics]
-        D3[Targeted or Radial Dispatch Request]
-        D4[Live GPS Mechanic Route Tracking]
-        D5[In-App Chat & Review Submission]
-    end
+**RescueRide** is a web-based roadside assistance and mechanic coordination platform designed to help drivers manage vehicle breakdowns, mechanical failures, and roadside emergencies through a unified digital system.
 
-    subgraph Mechanic [" Mechanic Role"]
-        M1[Online Duty Status Toggle]
-        M2[Realtime Live Incident Dispatch Feed]
-        M3[Direct Claim / One-Click Accept]
-        M4[Turn-by-Turn Full-Bleed Navigation]
-        M5[Lifecycle Progress & Completion Log]
-    end
+Instead of functioning only as a mechanic-finding application, RescueRide aims to connect:
 
-    subgraph Admin [" Administrator Role"]
-        A1[Live Operations Matrix & Hotspots Map]
-        A2[Mechanic Credential Verification]
-        A3[Profile Change Request Review]
-        A4[System Incident Reports Audit]
-        A5[Account Suspension & Escalation]
-    end
-```
+**Drivers → Assistance Requests → Mechanic Discovery → Job Coordination → Service Completion → Feedback & Administration**
 
----
+The system is designed around three primary users:
 
-## 3. Technology Stack
+| User | Role |
+|---|---|
+| 🚗 **Driver** | Reports vehicle problems, provides vehicle/location details, requests assistance, communicates with mechanics, and tracks service progress. |
+| 🔧 **Mechanic** | Manages availability, receives assistance requests, accepts suitable jobs, communicates with drivers, and manages service completion. |
+| 🛡️ **Administrator** | Manages users and mechanics, monitors requests and jobs, handles complaints and governance activities, and accesses system-level information. |
 
-| Layer | Technologies | Purpose |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS v4, Framer Motion | High-performance, responsive UI with server-side rendering and mobile-first layouts |
-| **Maps & Geolocation** | Leaflet, React-Leaflet, OpenStreetMap, Nominatim API | Interactive mapping, GPS pinning, and reverse geocoding without vendor API key lock-in |
-| **Backend / API** | Next.js Route Handlers, Node.js runtime, Edge middleware (`proxy.js`) | REST API endpoints, RBAC middleware, and server-side lifecycle transition enforcement |
-| **Database & Realtime** | Supabase (PostgreSQL 15+, PostGIS spatial extensions, Realtime CDC) | Relational persistence, spatial indexing (GiST), and WebSocket event broadcasting |
-| **AI Diagnostic Chain** | Gemini 2.5 Flash, Groq (Llama-3.3-70B), OpenRouter, Deterministic Offline Engine | Resilient multi-tier automotive fault classification with structured JSON schema output |
-| **Transactional Email** | Resend API SDK | Automated email notifications for dispatches, status changes, and administrative actions |
-| **State Management** | Zustand stores (`useRequestStore`, `authStore`) | Predictable client-side state across multi-step forms and authentication flows |
+### Core Project Areas
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Roadside_Assistance-1565C0?style=flat-square" alt="Roadside Assistance">
+  <img src="https://img.shields.io/badge/Mechanic_Matching-00897B?style=flat-square" alt="Mechanic Matching">
+  <img src="https://img.shields.io/badge/Real--Time_Coordination-6A1B9A?style=flat-square" alt="Real-Time Coordination">
+  <img src="https://img.shields.io/badge/Vehicle_Management-E65100?style=flat-square" alt="Vehicle Management">
+  <img src="https://img.shields.io/badge/Location_Services-0277BD?style=flat-square" alt="Location Services">
+  <img src="https://img.shields.io/badge/Job_Management-2E7D32?style=flat-square" alt="Job Management">
+  <img src="https://img.shields.io/badge/Safety-C62828?style=flat-square" alt="Safety">
+  <img src="https://img.shields.io/badge/Analytics-4527A0?style=flat-square" alt="Analytics">
+</p>
 
 ---
 
-## 4. Rescue Request State Machine
+# 👨‍🏫 Project Guide
 
-All rescue status updates are strictly validated server-side in `src/lib/request.js` and `src/app/api/requests/status/route.js`. Clients cannot bypass state transitions directly in the database.
+<div align="center">
 
-```text
-               ┌───────────────► CANCELLED ◄───────────────┐
-               │                     ▲                     │
-               │ (Driver/Mechanic)   │ (Driver/Mechanic)   │ (System Timeout)
-               │                     │                     │
-[PENDING] ─────┴───────► [ACCEPTED] ─┴──────► [EN_ROUTE] ──┴──► [ARRIVED]
-                                                                    │
-[COMPLETED] ◄────────────────── [IN_PROGRESS] ◄─────────────────────┘
-```
+| | |
+|---|---|
+| **Project Guide** | **Er. Ram Babu Buri** |
+| **Research Area** | **Machine Learning & Data Science** |
+| **Specializations** | **Java · JSP–Servlet · Spring Boot · MySQL · Python** |
 
-### Transition & Cancellation Rules
-1. **Pending $\to$ Accepted:** Only verified mechanics (`verification_status = 'approved'`) who are online can accept unassigned requests.
-2. **Accepted $\to$ En Route $\to$ Arrived $\to$ In Progress $\to$ Completed:** Only the assigned mechanic or an administrator can progress the job.
-3. **Cancellation Authority:**
-   * **Drivers:** Can cancel during `pending`, `accepted`, or `en_route`. Cancellation is blocked once the mechanic has `arrived` or work is `in_progress`.
-   * **Mechanics:** Can cancel before work begins (`accepted`, `en_route`, `arrived`) with a mandatory cancellation reason. Work `in_progress` requires dispute/incident reporting.
-   * **System Timeout (`/api/requests/auto-cancel`):** Automatically cancels expired pending requests if no mechanic claims them.
-   * **Admins:** Can cancel or reassign requests at any stage for operational recovery.
+</div>
 
 ---
 
-## 5. Repository Structure
+# 👥 Team Members
 
-```text
-roadrescue/
-├── docs/                               # Formal architectural & engineering documentation
-│   ├── ai-diagnostic.md                # Multi-tier AI architecture & schema definitions
-│   ├── api-reference.md                # Comprehensive Next.js API route specifications
-│   ├── architecture.md                 # System components, integrations, and deployment model
-│   ├── db-schema.md                    # Database tables, relationships, and PostGIS queries
-│   ├── DEVELOPER_NOTES.md              # Technical implementation notes & developer conventions
-│   ├── realtime-flow.md                # Supabase Realtime subscriptions & event lifecycles
-│   ├── rls-policies.md                 # Row-Level Security policies per table
-│   └── state-machine.md                # State transition diagram and validation rules
-├── supabase/                           # Database migrations and seed configurations
-│   ├── migrations/                     # Sequential SQL migration files
-│   ├── config.toml                     # Supabase local development configuration
-│   └── seed.sql                        # Demonstration seed accounts and test records
-├── web/                                # Next.js web application
-│   ├── public/                         # Static assets, icons, and manifest
-│   ├── src/
-│   │   ├── app/                        # Next.js App Router (pages & API routes)
-│   │   │   ├── api/                    # Server-side API endpoints
-│   │   │   │   ├── admin/              # Administrative endpoints (mechanics, users, stats)
-│   │   │   │   ├── ai/diagnose/        # Multi-provider AI diagnostic route
-│   │   │   │   ├── notifications/      # Notification endpoints (email relay)
-│   │   │   │   ├── profile/            # Profile preferences & change requests
-│   │   │   │   ├── reports/            # Incident reporting endpoint
-│   │   │   │   └── requests/           # Core rescue request lifecycle & chat endpoints
-│   │   │   ├── auth/                   # Authentication pages (login, register)
-│   │   │   └── dashboard/              # Role-protected dashboards (driver, mechanic, admin)
-│   │   ├── components/                 # Reusable UI, Map, AI, and Layout components
-│   │   ├── hooks/                      # Custom React hooks (auth, location, realtime, diagnostics)
-│   │   ├── lib/                        # Server helpers, rate limiters, AI providers, and RBAC guards
-│   │   │   ├── ai/                     # AI Provider Manager and provider implementations
-│   │   │   └── supabase/               # Supabase browser and server client initializers
-│   │   ├── providers/                  # Context providers (AuthProvider)
-│   │   ├── stores/                     # Zustand state stores
-│   │   └── proxy.js                    # Next.js edge route protection & RBAC middleware
-│   ├── .env.example                    # Environment variable template
-│   ├── package.json                    # Node dependencies and scripts
-│   └── vercel.json                     # Vercel deployment configuration
-└── README.md                           # Root project documentation (this file)
-```
+| # | Team Member | Enrollment No. |
+|:---:|---|---|
+| 🧑‍💻 **01** | **Sahil Saini** | `24E1ARCSM30P141` |
+| 🧑‍💻 **02** | **Nitin Singh Shekhawat** | `24E1ARITM40P037` |
+| 🧑‍💻 **03** | **Sakshi Kumari Singh** | `24E1ARCSF40P143` |
+| 🧑‍💻 **04** | **Rajat Tailor** | `24E1ARCSM30P126` |
 
 ---
 
-## 6. Quick Start & Local Setup
+# 📘 Week 1 — Project Initiation & Problem Discovery
 
-### Prerequisites
-* **Node.js:** v18.18.0 or higher (Node.js 20+ recommended)
-* **npm:** v9+ or **pnpm** / **yarn**
-* **Supabase Project:** Free cloud instance at [supabase.com](https://supabase.com) or local Supabase CLI
+<p align="center">
+  <img src="https://img.shields.io/badge/Week-01-1565C0?style=for-the-badge" alt="Week 1">
+  <img src="https://img.shields.io/badge/Phase-Research-6A1B9A?style=for-the-badge" alt="Research">
+  <img src="https://img.shields.io/badge/Status-Completed-2E7D32?style=for-the-badge" alt="Completed">
+  <img src="https://img.shields.io/badge/Duration-06--12_July_2026-E65100?style=for-the-badge" alt="Duration">
+</p>
 
-### Step 1: Clone Repository & Install Dependencies
-```bash
-git clone https://github.com/Handson-A/roadrescue.git
-cd roadrescue/web
-npm install
-```
+## 🎯 Week Objective
 
-### Step 2: Configure Environment Variables
-Create `.env.local` inside the `web/` directory:
-```bash
-cp .env.example .env.local
-```
-Fill in your configuration:
-```env
-# Supabase Configuration (Required)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...
-
-# AI Diagnostics Providers (At least one required for cloud LLM; offline fallback works without keys)
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash
-
-# Fallback AI Providers (Optional but recommended)
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
-OPENROUTER_API_KEY=your_openrouter_api_key
-OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct
-AI_PROVIDER_TIMEOUT_MS=7000
-
-# Email Service (Optional for local testing; required for production email notifications)
-RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=RoadRescue <onboarding@resend.dev>
-
-# Application Base URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### Step 3: Database Setup
-Apply all database migrations in `supabase/migrations/` sequentially using the Supabase SQL Editor or Supabase CLI:
-```bash
-# If using Supabase CLI locally:
-supabase db reset
-```
-
-### Step 4: Run Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+The objective of Week 1 was to establish the foundation of the project by finalizing the team, identifying a genuine real-world problem, conducting preliminary research, discussing a suitable software-based solution, selecting the project guide, and preparing the initial project abstract.
 
 ---
 
-## 7. Build, Verification & Testing
+## 📅 Daily Progress
 
-```bash
-# Compile and validate production build with Turbopack
-npm run build
-
-# Run ESLint validation
-npm run lint
-```
-
-### Automated End-to-End Build Verification
-The application undergoes full static optimization and compile-time verification across all 57 static and dynamic route segments:
-```text
-✓ Compiled successfully in 20.9s
-  Running TypeScript ...
-  Finished TypeScript in 270ms ...
-✓ Generating static pages using 11 workers (57/57)
-```
+| Date | Activity | Outcome |
+|---|---|---|
+| **06 July 2026** | Discussion for team members | Discussed team formation, individual interests, availability, and project expectations. |
+| **07 July 2026** | Finalizing team members | Finalized the four-member project team. |
+| **08 July 2026** | Finding a real-life problem | Evaluated multiple real-world problems and identified roadside assistance as a suitable project domain. |
+| **09 July 2026** | Research for the problem | Conducted preliminary research on vehicle breakdowns and roadside assistance requirements. |
+| **10 July 2026** | Discussion for solution | Discussed possible software-based solutions and established the initial RescueRide concept. |
+| **11 July 2026** | Discussion & selection of project guide | Discussed project requirements and finalized the project guide. |
+| **12 July 2026** | Preparation of Abstract | Prepared and reviewed the initial project abstract. |
 
 ---
 
-## 8. Multi-Layer Security & RBAC
+# 📄 Week 1 — Project Abstract
 
-1. **Edge Middleware Fencing (`src/proxy.js`):** Intercepts requests to `/dashboard/*` and `/auth/*`, validates the active Supabase session, queries the user's verified role from `public.profiles`, and redirects unauthorized roles to their respective dashboards.
-2. **API Route Guards (`src/lib/rbac.js`):** Every API endpoint enforces role requirements (`requireAdmin()`, `requireMechanic()`, `requireDriver()`) before executing business logic.
-3. **Database Row-Level Security (RLS):** PostgreSQL policies scope data access at the engine level:
-   * Drivers can only read/write their own rescue requests.
-   * Mechanics can only view unassigned pending requests or jobs assigned specifically to them.
-   * In-app chat messages are restricted strictly to the request's driver and assigned mechanic.
-4. **Email Relay Hardening:** `/api/notifications/email` blocks non-admin users from sending arbitrary emails to unverified recipients. Normal users can only dispatch system notifications to their own verified email.
-5. **Rate Limiting:** Sliding-window rate limiters protect sensitive endpoints (e.g. 20 req/min for AI diagnostics, 3 requests/hr for distress calls).
-6. **Input Sanitization:** Recursive HTML stripping and character encoding in `src/lib/validate.js` prevent Cross-Site Scripting (XSS) and injection attacks.
+## RescueRide: Roadside Assistance and Mechanic Coordination System
+
+**RescueRide: Roadside Assistance and Mechanic Coordination System** is a web-based roadside assistance platform designed to help drivers manage vehicle breakdowns, mechanical failures, and roadside emergencies through a unified digital system. Instead of functioning as a simple mechanic-finding application, RescueRide connects **drivers, suitable mechanics, real-time job coordination, service management, and administration** into a structured assistance workflow.
+
+The platform allows drivers to maintain vehicle information, report breakdowns, provide symptoms and problem details, share their location, and request roadside assistance. Based on the reported problem, required service, location, mechanic availability, service area, and relevant capabilities, the system supports **nearby mechanic discovery and mechanic matching**.
+
+After a mechanic accepts a request, the system supports job assignment, communication, status updates, estimated arrival information, service progress, completion, and service history. The assistance lifecycle can progress through stages such as:
+
+<p align="center">
+
+`REQUESTED` → `MATCHED` → `ACCEPTED` → `EN ROUTE` → `ARRIVED` → `DIAGNOSING` → `REPAIRING` → `COMPLETED` → `CLOSED`
+
+</p>
+
+The system also focuses on **real-time assistance and safety**, including location-based coordination, assistance tracking, status visibility, ETA information, and prioritization of urgent requests where supported. An administration and analytics layer enables authorized administrators to manage users and mechanics, verify information, monitor requests and jobs, handle complaints and governance activities, maintain audit records, and generate operational insights.
+
+### Overall Workflow
+
+<p align="center">
+
+**Driver**  
+↓  
+**Problem Report**  
+↓  
+**Vehicle & Location**  
+↓  
+**Assistance Discovery**  
+↓  
+**Mechanic Matching**  
+↓  
+**Job Coordination**  
+↓  
+**Service Completion**  
+↓  
+**Feedback & Analytics**
+
+</p>
+
+By combining roadside assistance, mechanic coordination, real-time assistance, safety-oriented functionality, vehicle information, service management, and administrative analytics, RescueRide aims to create a more organized, transparent, and efficient approach to roadside assistance management.
+
+### Technology / Concept Areas
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Roadside_Assistance-1565C0?style=flat-square">
+  <img src="https://img.shields.io/badge/Mechanic_Matching-00897B?style=flat-square">
+  <img src="https://img.shields.io/badge/Real--Time_Coordination-6A1B9A?style=flat-square">
+  <img src="https://img.shields.io/badge/Vehicle_Management-E65100?style=flat-square">
+  <img src="https://img.shields.io/badge/Location_Services-0277BD?style=flat-square">
+  <img src="https://img.shields.io/badge/Job_Management-2E7D32?style=flat-square">
+  <img src="https://img.shields.io/badge/Service_History-795548?style=flat-square">
+  <img src="https://img.shields.io/badge/Safety-C62828?style=flat-square">
+  <img src="https://img.shields.io/badge/Analytics-4527A0?style=flat-square">
+</p>
 
 ---
 
-## 9. Comprehensive Documentation Index
+## 🔍 Week 1 Outcomes
 
-For detailed architectural specifications, consult the dedicated documentation files:
-
-*  **[System Architecture](docs/architecture.md)** — Architectural layers, client-server interactions, and integrations.
-*  **[API Reference](docs/api-reference.md)** — Complete specifications for all REST endpoints, parameters, and responses.
-*  **[Database Schema](docs/db-schema.md)** — Complete PostgreSQL table schemas, indexes, and PostGIS spatial functions.
-*  **[AI Diagnostic Module](docs/ai-diagnostic.md)** — Multi-provider fallback chain, JSON schema, and prompt engineering.
-*  **[State Machine](docs/state-machine.md)** — Formal rescue request state transition graph and validation rules.
-*  **[RLS Security Policies](docs/rls-policies.md)** — PostgreSQL Row-Level Security policy definitions per table.
-*  **[Realtime Event Flow](docs/realtime-flow.md)** — WebSocket subscription patterns and live tracking mechanics.
-*  **[Deployment Guide](web/DEPLOYMENT_GUIDE.md)** — Production deployment instructions for Vercel and Supabase.
-*  **[Technical Briefcase / Viva Kit](TECHNICAL_BRIEFCASE.md)** — Academic defense questions, answers, and technical highlights.
+- ✅ Four-member project team finalized.
+- ✅ Roadside assistance identified as the primary problem domain.
+- ✅ Preliminary problem research completed.
+- ✅ Initial solution concept established.
+- ✅ Primary system users identified.
+- ✅ Project guide selected.
+- ✅ Initial project abstract prepared.
+- ✅ Initial RescueRide workflow established.
 
 ---
 
-## 10.  Academic Attribution
+## ⚠️ Problems Faced
 
-Developed as a Final Year Project (FYP) in Computer Science / Software Engineering.   
-Copyright © 2026 RoadRescue. All rights reserved.
+- Finalizing the team required discussion regarding member availability, interests, and responsibilities.
+- Identifying a genuine and feasible real-world problem required evaluation of multiple ideas.
+- The initial problem scope was broad and required refinement into a manageable software project.
+- Additional discussion was required to convert the identified problem into a clear system concept.
+
+---
+
+## 📌 Plan for Week 2
+
+- Conduct detailed research on the roadside assistance problem.
+- Study existing solutions and identify their limitations.
+- Identify user pain points and system requirements.
+- Define Driver, Mechanic, and Administrator workflows.
+- Identify functional and non-functional requirements.
+- Determine the major functional modules of RescueRide.
+- Define the scope and responsibilities of each module.
+- Begin preparation of the **Software Requirements Specification (SRS)**.
+- Review the proposed requirements with the project guide.
+
+---
+
+# 📊 Week 1 Summary
+
+| Category | Status |
+|---|---|
+| Team Formation | 🟢 Completed |
+| Problem Identification | 🟢 Completed |
+| Preliminary Research | 🟢 Completed |
+| Solution Ideation | 🟢 Completed |
+| Guide Selection | 🟢 Completed |
+| Abstract Preparation | 🟢 Completed |
+| Detailed Requirements | 🟡 Planned for Week 2 |
+| SRS | 🟡 Planned for Week 2 |
+| System Design | ⚪ Upcoming |
+| Development | ⚪ Upcoming |
+
+---
+
+<p align="center">
+  <strong>Week 1 Completed</strong><br>
+  <sub>Next Phase: Detailed Problem Research & SRS Preparation</sub>
+</p>
