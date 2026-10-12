@@ -63,11 +63,11 @@ function errorMessage(error) {
   return message
 }
 
-export default function AuthPreview({ variant }) {
+export default function AuthForm({ variant, initialRole = 'driver' }) {
   const page = content[variant]
   const isRegister = variant === 'register'
   const router = useRouter()
-  const [role, setRole] = useState('driver')
+  const [role, setRole] = useState(initialRole)
   const [status, setStatus] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -158,6 +158,15 @@ export default function AuthPreview({ variant }) {
   return (
     <main className="auth-page">
       <aside className="auth-aside">
+        <div className="auth-ambient" aria-hidden="true">
+          <span className="auth-orb auth-orb-one" />
+          <span className="auth-orb auth-orb-two" />
+          <span className="auth-orbit auth-orbit-one" />
+          <span className="auth-orbit auth-orbit-two" />
+          <span className="auth-route" />
+          <span className="auth-map-node auth-map-node-one" />
+          <span className="auth-map-node auth-map-node-two" />
+        </div>
         <Link className="brand-lockup" href="/">
           <span className="brand-mark"><CarFront size={20} /></span> RescueRide
         </Link>
@@ -196,7 +205,7 @@ export default function AuthPreview({ variant }) {
                 <input id={`auth-${name}`} name={name} type={type} autoComplete={autoComplete} {...attributes} />
               </div>
             ))}
-            {status && <div className={`preview-notice${status.type === 'error' ? ' preview-notice-error' : ''}`} role={status.type === 'error' ? 'alert' : 'status'}>{status.text}</div>}
+            {status && <div className={`form-notice${status.type === 'error' ? ' form-notice-error' : ''}`} role={status.type === 'error' ? 'alert' : 'status'}>{status.text}</div>}
             <button className="btn btn-primary" type="submit" disabled={submitting}>
               {submitting ? 'Please wait…' : page.button}
             </button>

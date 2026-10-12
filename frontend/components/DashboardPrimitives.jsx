@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, CircleHelp, Database, Info } from 'lucide-react'
+import { ArrowRight, CircleHelp, Info } from 'lucide-react'
 
 export function PageHeading({ eyebrow, title, description, actions }) {
   return (
@@ -11,18 +11,6 @@ export function PageHeading({ eyebrow, title, description, actions }) {
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </header>
-  )
-}
-
-export function DataConnectionNotice({ title = 'Live data isn’t connected in this preview' }) {
-  return (
-    <div className="data-warning" role="status">
-      <Database size={18} />
-      <div>
-        <strong>{title}</strong>
-        This independent frontend has no authenticated API session configured. It won’t show sample operational data or report actions as successful.
-      </div>
-    </div>
   )
 }
 

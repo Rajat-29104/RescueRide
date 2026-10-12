@@ -1,5 +1,5 @@
-import AuthPreview from '../../../components/AuthPreview'
+import AuthForm from '../../../components/AuthForm'
 
 export default function ForgotPasswordPage() {
-  return <AuthPreview variant="forgot" />
+  return <AuthForm variant="forgot" />
 }
