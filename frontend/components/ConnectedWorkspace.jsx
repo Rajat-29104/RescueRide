@@ -20,16 +20,6 @@ async function backend(path, options = {}) {
   return payload
 }
 
-function toggleCommunication(event) {
-  const { value, checked } = event.target
-  setForm((current) => ({
-    ...current,
-    communication_preferences: checked
-      ? [...(current.communication_preferences || []), value]
-      : (current.communication_preferences || []).filter((item) => item !== value),
-  }))
-}
-
 function ErrorMessage({ children }) {
   return <div className="form-notice form-notice-error" role="alert">{children}</div>
 }
@@ -287,6 +277,13 @@ export default function ConnectedWorkspace({ role, section = [] }) {
       registrationExpiry: vehicle.registration_expiry || '',
       notes: vehicle.notes || '',
     })
+    setMessage('')
+  }
+
+  async function archiveDriverVehicle(vehicleId) {
+    if (!window.confirm('Archive this vehicle? It will no longer appear as an active vehicle.')) return
+    await runAction(() => backend(`vehicles/${encodeURIComponent(vehicleId)}`, { method: 'DELETE' }))
+    if (editingVehicleId === vehicleId) setEditingVehicleId(null)
   }
 
   function addVehicle() {
@@ -479,7 +476,7 @@ export default function ConnectedWorkspace({ role, section = [] }) {
         </>
       )}
 
-      {role === 'driver' && sectionKey.startsWith('vehicles') && (
+      {role === 'driver' && ['vehicles', 'vehicles/new'].includes(sectionKey) && (
         <section className="surface panel">
           <div className="panel-heading">
             <div><h2>Vehicle details</h2><p>Manage vehicles associated with your authenticated driver account.</p></div>
@@ -578,7 +575,15 @@ export default function ConnectedWorkspace({ role, section = [] }) {
             </fieldset>
             <fieldset className="workspace-preference-group">
               <legend>Preferred contact methods</legend>
-              {['call', 'sms', 'whatsapp'].map((method) => <label className="workspace-checkbox" key={method}><input type="checkbox" value={method} checked={(form.communication_preferences || []).includes(method)} onChange={toggleCommunication} /> {method}</label>)}
+              {['call', 'sms', 'whatsapp'].map((method) => <label className="workspace-checkbox" key={method}><input type="checkbox" value={method} checked={(form.communication_preferences || []).includes(method)} onChange={(event) => {
+                const { value, checked } = event.target
+                setForm((current) => ({
+                  ...current,
+                  communication_preferences: checked
+                    ? [...(current.communication_preferences || []), value]
+                    : (current.communication_preferences || []).filter((item) => item !== value),
+                }))
+              }} /> {method}</label>)}
             </fieldset>
             <button className="btn btn-primary" disabled={busy}>Save settings</button>
           </form>
