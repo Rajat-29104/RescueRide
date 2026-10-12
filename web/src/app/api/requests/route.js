@@ -6,6 +6,48 @@ import { sendNotificationEmail } from '@/lib/email'
 import { sanitizeInput } from '@/lib/validate'
 import { recordMatchMetric } from '@/lib/metrics'
 
+export async function GET(req) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) throw profileError
+    if (profile?.role !== 'driver') {
+      return NextResponse.json({ error: 'Only drivers can view driver requests.' }, { status: 403 })
+    }
+
+    const requestId = new URL(req.url).searchParams.get('id')
+    let query = supabase
+      .from('rescue_requests')
+      .select('id, status, service_type, problem_description, incident_address, vehicle_make, vehicle_model, vehicle_year, vehicle_color, vehicle_plate, mechanic_id, created_at, updated_at')
+      .eq('driver_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (requestId) {
+      const { data: request, error } = await query.eq('id', requestId).maybeSingle()
+      if (error) throw error
+      if (!request) return NextResponse.json({ error: 'Request not found.' }, { status: 404 })
+      return NextResponse.json({ request }, { status: 200 })
+    }
+
+    const { data: requests, error } = await query.limit(50)
+    if (error) throw error
+    return NextResponse.json({ requests: requests || [] }, { status: 200 })
+  } catch (err) {
+    console.error('[GET /api/requests]', err.message)
+    return NextResponse.json({ error: err.message || 'Unable to load requests.' }, { status: 500 })
+  }
+}
+
 export async function POST(req) {
   try {
     const ip = req.headers.get('x-forwarded-for') || 'anonymous'
@@ -18,7 +60,6 @@ export async function POST(req) {
     }
 
     const supabase = await createClient()
-    const serviceSupabase = await createServiceClient()
 
     // verify user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -104,6 +145,17 @@ export async function POST(req) {
       return NextResponse.json(
         { error: 'incidentLng must be a valid longitude between -180 and 180 degrees' },
         { status: 400 }
+      )
+    }
+
+    let serviceSupabase
+    try {
+      serviceSupabase = await createServiceClient()
+    } catch (error) {
+      console.error('[REQUEST DISPATCH CONFIGURATION]:', error.message)
+      return NextResponse.json(
+        { error: 'Request dispatch is not configured. Contact RescueRide support.' },
+        { status: 503 }
       )
     }
 
@@ -205,9 +257,9 @@ export async function POST(req) {
         } else {
           // BRANCH B: Standard geospatial broadcast matching (bypassed for targeted dispatch)
           const { data: nearbyMechanics, error: matchError } = await serviceSupabase.rpc('get_nearby_verified_mechanics', {
-            lat: Number(incidentLat),
-            lng: Number(incidentLng),
-            radius_km: 10.0,
+            request_latitude: Number(incidentLat),
+            request_longitude: Number(incidentLng),
+            search_radius_km: 10.0,
           })
 
           if (matchError) {

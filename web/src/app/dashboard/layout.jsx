@@ -18,6 +18,22 @@ export default async function DashboardLayout({ children }) {
   const headersList = await headers()
   const pathname = headersList.get('x-pathname') || '/dashboard'
 
+  const isDemoMode =
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_DEMO_AUTH === 'true'
+
+  if (isDemoMode) {
+    if (!isPathForRole(pathname, 'driver')) {
+      redirect('/dashboard/driver')
+    }
+
+    return (
+      <DashboardShell initialRole="driver">
+        {children}
+      </DashboardShell>
+    )
+  }
+
   const supabase = await createClient()
   const auth = await supabase.auth.getUser()
   const authUser = auth.data?.user

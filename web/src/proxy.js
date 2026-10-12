@@ -22,20 +22,23 @@ const isPathForRole = (pathname, role) => {
 }
 
 const createSupabaseClient = (request, response) => {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
-        },
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !anonKey) {
+    return null
+  }
+
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (cookiesToSet) => {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options)
+        })
       },
-    }
-  )
+    },
+  })
 }
 
 export async function proxy(request) {
@@ -59,12 +62,31 @@ export async function proxy(request) {
       headers: requestHeaders,
     },
   })
-  
+
+  const isDemoMode =
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_DEMO_AUTH === 'true'
+  const isDashboardRoute = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
+
+  if (isDemoMode) {
+    if (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register')) {
+      return NextResponse.redirect(new URL('/dashboard/driver', request.url))
+    }
+
+    if (isDashboardRoute && !isPathForRole(pathname, 'driver')) {
+      return NextResponse.redirect(new URL('/dashboard/driver', request.url))
+    }
+
+    return response
+  }
+
   const supabase = createSupabaseClient(request, response)
+  if (!supabase) {
+    return response
+  }
 
   // Retrieve user session
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  const isDashboardRoute = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
 
   // ==========================================
   // BRANCH 1: UNAUTHENTICATED USERS (NO SESSION)
