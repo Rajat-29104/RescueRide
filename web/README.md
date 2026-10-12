@@ -20,6 +20,8 @@ GEMINI_API_KEY=your_gemini_key
 ```
 If the Supabase envs are missing the app falls back to a mock Supabase client (useful for offline UI work). To force mock behavior set `NEXT_PUBLIC_USE_MOCK_AUTH=true`.
 
+For a local, read-only UI preview without signing in, set `NEXT_PUBLIC_DEMO_AUTH=true`. This opens only the driver dashboard and is honored only by the development server; remove or set it to `false` when you want normal authentication.
+
 3. Run locally
 ```bash
 npm run dev
