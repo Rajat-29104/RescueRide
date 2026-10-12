@@ -6,6 +6,7 @@
 **/out/
 **/dist/
 **/build/
+**/target/
 **/.turbo/
 **/.vercel/
 
@@ -39,6 +40,5 @@ Thumbs.db
 *.swp
 *.swo
 
-# Local-only artifacts in this repository
+# Accidental local root lockfile created by running npm at repository root.
 /package-lock.json
-/backend-spring/

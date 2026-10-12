@@ -110,6 +110,7 @@ export default function ConnectedWorkspace({ role, section = [] }) {
   const [query, setQuery] = useState('')
   const [form, setForm] = useState({})
   const [userId, setUserId] = useState('')
+  const [vehicleId, setVehicleId] = useState(null)
   const sectionKey = section.join('/')
   const [firstSection, secondSection, thirdSection] = sectionKey.split('/')
   const root = `/dashboard/${role}`
@@ -126,10 +127,19 @@ export default function ConnectedWorkspace({ role, section = [] }) {
 
       let data
       if (role === 'driver' && ['vehicles', 'vehicles/new', 'vehicles/edit'].includes(sectionKey)) {
-        const { data: profile, error } = await supabase.from('driver_profiles').select('*').eq('user_id', user.id).maybeSingle()
-        if (error) throw error
-        data = { profile: profile || { user_id: user.id, vehicle_make: '', vehicle_model: '', vehicle_year: '', vehicle_color: '', vehicle_plate: '', home_area: '' } }
-        setForm(data.profile)
+        data = await backend('vehicles')
+        const vehicle = sectionKey === 'vehicles/new' ? null : data.vehicles?.[0]
+        setVehicleId(vehicle?.id || null)
+        setForm(vehicle ? {
+          make: vehicle.make || '',
+          model: vehicle.model || '',
+          year: vehicle.year || '',
+          color: vehicle.color || '',
+          plate: vehicle.plate || '',
+          vin: vehicle.vin || '',
+          registrationExpiry: vehicle.registration_expiry || '',
+          notes: vehicle.notes || '',
+        } : { make: '', model: '', year: '', color: '', plate: '', vin: '', registrationExpiry: '', notes: '' })
       } else if (role === 'driver' && ['safety', 'safety/contacts'].includes(sectionKey)) {
         data = await backend('safety/emergency-contacts')
       } else if (role === 'driver' && sectionKey === 'safety/sos') {
@@ -177,21 +187,10 @@ export default function ConnectedWorkspace({ role, section = [] }) {
       } else if (role === 'driver' && sectionKey === 'vehicles/service-history') {
         data = await backend('requests')
       } else if (role === 'mechanic' && ['requests', 'jobs', 'history'].includes(sectionKey)) {
-        let request = supabase.from('rescue_requests').select('id,status,service_type,problem_description,incident_address,created_at,mechanic_id,driver_id,vehicle_make,vehicle_model,vehicle_plate')
-        if (sectionKey === 'requests') {
-          request = request.eq('status', 'pending').or(`mechanic_id.is.null,mechanic_id.eq.${user.id}`)
-        } else if (sectionKey === 'jobs') {
-          request = request.eq('mechanic_id', user.id).in('status', ['accepted', 'en_route', 'arrived', 'in_progress'])
-        } else {
-          request = request.eq('mechanic_id', user.id).in('status', ['completed', 'cancelled'])
-        }
-        const { data: requests, error } = await request.order('created_at', { ascending: false }).limit(100)
-        if (error) throw error
-        data = { requests: requests || [] }
+        data = await backend(`mechanics/requests?view=${encodeURIComponent(sectionKey)}`)
       } else if (role === 'mechanic' && ['settings', 'account', 'locations'].includes(sectionKey)) {
-        const { data: profile, error } = await supabase.from('mechanic_profiles').select('business_name,years_experience,specializations,location_label,verification_status,is_available').eq('user_id', user.id).maybeSingle()
-        if (error) throw error
-        data = { profile: profile || {} }
+        data = await backend('mechanics/profile')
+        const profile = data.profile
         setForm({
           business_name: profile?.business_name || '',
           years_experience: profile?.years_experience || 0,
@@ -210,9 +209,7 @@ export default function ConnectedWorkspace({ role, section = [] }) {
       } else if (role === 'mechanic' && firstSection === 'requests' && secondSection) {
         data = await backend(`requests/${encodeURIComponent(secondSection)}`)
       } else if (role === 'mechanic' && sectionKey === 'overview') {
-        const { data: requests, error } = await supabase.from('rescue_requests').select('id,status,service_type,problem_description,incident_address,created_at').eq('mechanic_id', user.id).in('status', ['accepted', 'en_route', 'arrived', 'in_progress']).order('created_at', { ascending: false }).limit(10)
-        if (error) throw error
-        data = { requests: requests || [] }
+        data = await backend('mechanics/requests?view=overview')
       } else if (role === 'admin' && sectionKey === 'overview') {
         data = await backend('admin/stats')
       } else if (role === 'admin') {
@@ -265,30 +262,54 @@ export default function ConnectedWorkspace({ role, section = [] }) {
   async function saveVehicle(event) {
     event.preventDefault()
     await runAction(async () => {
-      const supabase = getSupabaseBrowserClient()
       const payload = {
         ...form,
-        vehicle_year: form.vehicle_year ? Number(form.vehicle_year) : null,
+        year: form.year ? Number(form.year) : null,
       }
-      const { data, error } = await supabase.from('driver_profiles').update(payload).eq('user_id', userId).select('user_id').maybeSingle()
-      if (error) throw error
-      if (!data) throw new Error('Your driver profile is missing. Contact RescueRide support to restore it.')
+      const result = await backend(vehicleId ? `vehicles/${vehicleId}` : 'vehicles', {
+        method: vehicleId ? 'PATCH' : 'POST',
+        body: payload,
+      })
+      if (!result.vehicle?.id) throw new Error('The vehicle could not be saved.')
+      setVehicleId(result.vehicle.id)
     })
+  }
+
+  function selectVehicle(vehicle) {
+    setVehicleId(vehicle.id)
+    setForm({
+      make: vehicle.make || '',
+      model: vehicle.model || '',
+      year: vehicle.year || '',
+      color: vehicle.color || '',
+      plate: vehicle.plate || '',
+      vin: vehicle.vin || '',
+      registrationExpiry: vehicle.registration_expiry || '',
+      notes: vehicle.notes || '',
+    })
+  }
+
+  function addVehicle() {
+    setVehicleId(null)
+    setForm({ make: '', model: '', year: '', color: '', plate: '', vin: '', registrationExpiry: '', notes: '' })
+  }
+
+  async function archiveVehicle(vehicle) {
+    await runAction(() => backend(`vehicles/${vehicle.id}`, { method: 'DELETE' }))
+    if (vehicleId === vehicle.id) addVehicle()
   }
 
   async function saveMechanicProfile(event) {
     event.preventDefault()
     await runAction(async () => {
-      const supabase = getSupabaseBrowserClient()
-      const { data, error } = await supabase.from('mechanic_profiles').update({
+      const result = await backend('mechanics/profile', { method: 'PUT', body: {
         business_name: form.business_name,
         years_experience: Number(form.years_experience) || 0,
         location_label: form.location_label,
         specializations: String(form.specializations || '').split(',').map((item) => item.trim()).filter(Boolean),
         is_available: Boolean(form.is_available),
-      }).eq('user_id', userId).select('user_id').maybeSingle()
-      if (error) throw error
-      if (!data) throw new Error('Your mechanic profile is missing. Contact RescueRide support to restore it.')
+      } })
+      if (!result.profile) throw new Error('Your mechanic profile could not be saved.')
     })
   }
 
@@ -460,17 +481,32 @@ export default function ConnectedWorkspace({ role, section = [] }) {
 
       {role === 'driver' && sectionKey.startsWith('vehicles') && (
         <section className="surface panel">
-          <div className="panel-heading"><div><h2>Vehicle details</h2><p>Saved to your driver profile and available for future assistance requests.</p></div></div>
+          <div className="panel-heading">
+            <div><h2>Vehicle details</h2><p>Manage vehicles associated with your authenticated driver account.</p></div>
+            <button className="btn btn-secondary" type="button" onClick={addVehicle}>Add vehicle</button>
+          </div>
+          <RecordList
+            rows={data.vehicles || []}
+            fields={ [['Make', 'make'], ['Model', 'model'], ['Year', 'year'], ['Color', 'color'], ['Number plate', 'plate']] }
+            actions={(vehicle) => (
+              <>
+                <button className="btn btn-secondary" type="button" onClick={() => selectVehicle(vehicle)}>Edit</button>
+                <button className="btn btn-secondary" type="button" onClick={() => archiveVehicle(vehicle)} disabled={busy}>Archive</button>
+              </>
+            )}
+          />
           <form className="request-form" onSubmit={saveVehicle}>
             <div className="request-vehicle-grid">
-              <Field label="Make" name="vehicle_make" value={form.vehicle_make || ''} onChange={updateForm} maxLength={80} />
-              <Field label="Model" name="vehicle_model" value={form.vehicle_model || ''} onChange={updateForm} maxLength={80} />
-              <Field label="Year" name="vehicle_year" value={form.vehicle_year || ''} onChange={updateForm} type="number" min="1970" max={new Date().getFullYear()} />
-              <Field label="Color" name="vehicle_color" value={form.vehicle_color || ''} onChange={updateForm} maxLength={50} />
-              <Field label="Number plate" name="vehicle_plate" value={form.vehicle_plate || ''} onChange={updateForm} maxLength={30} />
-              <Field label="Home area" name="home_area" value={form.home_area || ''} onChange={updateForm} maxLength={150} />
+              <Field label="Make" name="make" value={form.make || ''} onChange={updateForm} maxLength={80} required />
+              <Field label="Model" name="model" value={form.model || ''} onChange={updateForm} maxLength={80} required />
+              <Field label="Year" name="year" value={form.year || ''} onChange={updateForm} type="number" min="1900" max="2100" required />
+              <Field label="Color" name="color" value={form.color || ''} onChange={updateForm} maxLength={50} required />
+              <Field label="Number plate" name="plate" value={form.plate || ''} onChange={updateForm} maxLength={30} required />
+              <Field label="VIN" name="vin" value={form.vin || ''} onChange={updateForm} maxLength={17} />
+              <Field label="Registration expiry" name="registrationExpiry" value={form.registrationExpiry || ''} onChange={updateForm} type="date" />
+              <Field label="Notes" name="notes" value={form.notes || ''} onChange={updateForm} maxLength={500} />
             </div>
-            <button className="btn btn-primary" disabled={busy}>Save vehicle details</button>
+            <button className="btn btn-primary" disabled={busy}>{vehicleId ? 'Save vehicle changes' : 'Save vehicle'}</button>
           </form>
         </section>
       )}

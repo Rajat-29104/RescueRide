@@ -8,12 +8,15 @@ const routeMethods = new Map([
   ['profile/change-requests', new Set(['GET', 'POST'])],
   ['safety/emergency-contacts', new Set(['GET', 'POST'])],
   ['safety/sos', new Set(['POST'])],
-  ['reports', new Set(['GET', 'POST'])],
+  ['reports', new Set(['GET', 'POST', 'DELETE'])],
   ['admin/stats', new Set(['GET'])],
   ['admin/requests', new Set(['GET'])],
   ['admin/mechanics', new Set(['GET', 'PATCH'])],
   ['admin/users', new Set(['GET', 'DELETE'])],
   ['admin/incidents', new Set(['GET', 'PATCH'])],
+  ['vehicles', new Set(['GET', 'POST'])],
+  ['mechanics/profile', new Set(['GET', 'PUT'])],
+  ['mechanics/requests', new Set(['GET'])],
   ['requests/status', new Set(['PATCH'])],
   ['requests/rate', new Set(['PATCH'])],
 ])
@@ -21,6 +24,7 @@ const routeMethods = new Map([
 function isAllowedRoute(route, method) {
   if (routeMethods.get(route)?.has(method)) return true
   if (method === 'GET' && /^requests\/[0-9a-f-]{36}$/.test(route)) return true
+  if (['GET', 'PATCH', 'DELETE'].includes(method) && /^vehicles\/[0-9a-f-]{36}$/.test(route)) return true
   if (method === 'PATCH' && /^requests\/[0-9a-f-]{36}\/status$/.test(route)) return true
   if (['GET', 'POST'].includes(method) && /^requests\/[0-9a-f-]{36}\/messages$/.test(route)) return true
   return false
@@ -51,9 +55,11 @@ async function proxyRequest(request, { params }) {
   targetUrl.search = new URL(request.url).search
   const headers = new Headers()
   const cookie = request.headers.get('cookie')
+  const authorization = request.headers.get('authorization')
   const contentType = request.headers.get('content-type')
 
   if (cookie) headers.set('cookie', cookie)
+  if (authorization) headers.set('authorization', authorization)
   if (contentType) headers.set('content-type', contentType)
 
   try {
