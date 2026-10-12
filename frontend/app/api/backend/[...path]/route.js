@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 const routeMethods = new Map([
   ['requests', new Set(['GET', 'POST'])],
+  ['vehicles', new Set(['GET', 'POST'])],
   ['search', new Set(['GET'])],
   ['mechanics/available', new Set(['GET'])],
   ['profile/preferences', new Set(['GET', 'PUT'])],
@@ -20,6 +21,7 @@ const routeMethods = new Map([
 
 function isAllowedRoute(route, method) {
   if (routeMethods.get(route)?.has(method)) return true
+  if (['GET', 'PATCH', 'DELETE'].includes(method) && /^vehicles\/[0-9a-f-]{36}$/.test(route)) return true
   if (method === 'GET' && /^requests\/[0-9a-f-]{36}$/.test(route)) return true
   if (method === 'PATCH' && /^requests\/[0-9a-f-]{36}\/status$/.test(route)) return true
   if (['GET', 'POST'].includes(method) && /^requests\/[0-9a-f-]{36}\/messages$/.test(route)) return true

@@ -8,7 +8,7 @@
 - Mechanics can review pending requests, accept work, progress job status, message request participants, review job history, and update profile/service-area availability.
 - Admin pages use the protected backend endpoints for statistics, user records, mechanic verification, requests, and incident/report review. Access is checked again by backend APIs; the frontend role check is not treated as authorization.
 - The same-origin proxy forwards only the frontend's explicitly allowlisted API paths and supported HTTP methods to `RESCUERIDE_BACKEND_URL`. It forwards the session cookie and never exposes the backend service-role key.
-- Vehicle details and mechanic profiles use the authenticated Supabase browser client and rely on the project's Row Level Security policies.
+- Vehicle CRUD uses the authenticated same-origin backend proxy and the driver's ownership-checked API routes; the `driver_vehicles` migration must be applied to the connected Supabase project. Mechanic profiles use the authenticated Supabase browser client and rely on the project's Row Level Security policies.
 
 ## Deployment requirements
 
