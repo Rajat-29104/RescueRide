@@ -20,16 +20,6 @@ async function backend(path, options = {}) {
   return payload
 }
 
-function toggleCommunication(event) {
-  const { value, checked } = event.target
-  setForm((current) => ({
-    ...current,
-    communication_preferences: checked
-      ? [...(current.communication_preferences || []), value]
-      : (current.communication_preferences || []).filter((item) => item !== value),
-  }))
-}
-
 function ErrorMessage({ children }) {
   return <div className="form-notice form-notice-error" role="alert">{children}</div>
 }
@@ -110,6 +100,7 @@ export default function ConnectedWorkspace({ role, section = [] }) {
   const [query, setQuery] = useState('')
   const [form, setForm] = useState({})
   const [userId, setUserId] = useState('')
+  const [editingVehicleId, setEditingVehicleId] = useState(null)
   const sectionKey = section.join('/')
   const [firstSection, secondSection, thirdSection] = sectionKey.split('/')
   const root = `/dashboard/${role}`
@@ -125,11 +116,11 @@ export default function ConnectedWorkspace({ role, section = [] }) {
       setUserId(user.id)
 
       let data
-      if (role === 'driver' && ['vehicles', 'vehicles/new', 'vehicles/edit'].includes(sectionKey)) {
-        const { data: profile, error } = await supabase.from('driver_profiles').select('*').eq('user_id', user.id).maybeSingle()
-        if (error) throw error
-        data = { profile: profile || { user_id: user.id, vehicle_make: '', vehicle_model: '', vehicle_year: '', vehicle_color: '', vehicle_plate: '', home_area: '' } }
-        setForm(data.profile)
+      if (role === 'driver' && ['vehicles', 'vehicles/new'].includes(sectionKey)) {
+        const result = await backend('vehicles')
+        data = { vehicles: result.vehicles || [] }
+        setForm({ make: '', model: '', year: '', color: '', plate: '', vin: '', registrationExpiry: '', notes: '' })
+        setEditingVehicleId(null)
       } else if (role === 'driver' && ['safety', 'safety/contacts'].includes(sectionKey)) {
         data = await backend('safety/emergency-contacts')
       } else if (role === 'driver' && sectionKey === 'safety/sos') {
@@ -265,15 +256,41 @@ export default function ConnectedWorkspace({ role, section = [] }) {
   async function saveVehicle(event) {
     event.preventDefault()
     await runAction(async () => {
-      const supabase = getSupabaseBrowserClient()
       const payload = {
-        ...form,
-        vehicle_year: form.vehicle_year ? Number(form.vehicle_year) : null,
+        make: form.make,
+        model: form.model,
+        year: form.year ? Number(form.year) : null,
+        color: form.color,
+        plate: form.plate,
+        vin: form.vin,
+        registrationExpiry: form.registrationExpiry || null,
+        notes: form.notes || null,
       }
-      const { data, error } = await supabase.from('driver_profiles').update(payload).eq('user_id', userId).select('user_id').maybeSingle()
-      if (error) throw error
-      if (!data) throw new Error('Your driver profile is missing. Contact RescueRide support to restore it.')
+      const path = editingVehicleId ? `vehicles/${encodeURIComponent(editingVehicleId)}` : 'vehicles'
+      await backend(path, { method: editingVehicleId ? 'PATCH' : 'POST', body: payload })
+      setEditingVehicleId(null)
     })
+  }
+
+  function editVehicle(vehicle) {
+    setEditingVehicleId(vehicle.id)
+    setForm({
+      make: vehicle.make || '',
+      model: vehicle.model || '',
+      year: vehicle.year || '',
+      color: vehicle.color || '',
+      plate: vehicle.plate || '',
+      vin: vehicle.vin || '',
+      registrationExpiry: vehicle.registration_expiry || '',
+      notes: vehicle.notes || '',
+    })
+    setMessage('')
+  }
+
+  async function archiveDriverVehicle(vehicleId) {
+    if (!window.confirm('Archive this vehicle? It will no longer appear as an active vehicle.')) return
+    await runAction(() => backend(`vehicles/${encodeURIComponent(vehicleId)}`, { method: 'DELETE' }))
+    if (editingVehicleId === vehicleId) setEditingVehicleId(null)
   }
 
   async function saveMechanicProfile(event) {
@@ -458,19 +475,33 @@ export default function ConnectedWorkspace({ role, section = [] }) {
         </>
       )}
 
-      {role === 'driver' && sectionKey.startsWith('vehicles') && (
+      {role === 'driver' && ['vehicles', 'vehicles/new'].includes(sectionKey) && (
         <section className="surface panel">
-          <div className="panel-heading"><div><h2>Vehicle details</h2><p>Saved to your driver profile and available for future assistance requests.</p></div></div>
+          <div className="panel-heading"><div><h2>Your vehicles</h2><p>Manage vehicles saved to your driver account.</p></div></div>
+          <RecordList
+            rows={(data.vehicles || []).filter((vehicle) => !vehicle.is_archived)}
+            fields={[['Vehicle', 'make'], ['Model', 'model'], ['Year', 'year'], ['Color', 'color'], ['Number plate', 'plate'], ['VIN', 'vin']]}
+            actions={(vehicle) => <div className="workspace-actions">
+              <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => editVehicle(vehicle)}>Edit</button>
+              <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => archiveDriverVehicle(vehicle.id)}>Archive</button>
+            </div>}
+          />
+          <div className="panel-heading"><div><h2>{editingVehicleId ? 'Edit vehicle' : 'Add a vehicle'}</h2><p>Enter the vehicle details below.</p></div></div>
           <form className="request-form" onSubmit={saveVehicle}>
             <div className="request-vehicle-grid">
-              <Field label="Make" name="vehicle_make" value={form.vehicle_make || ''} onChange={updateForm} maxLength={80} />
-              <Field label="Model" name="vehicle_model" value={form.vehicle_model || ''} onChange={updateForm} maxLength={80} />
-              <Field label="Year" name="vehicle_year" value={form.vehicle_year || ''} onChange={updateForm} type="number" min="1970" max={new Date().getFullYear()} />
-              <Field label="Color" name="vehicle_color" value={form.vehicle_color || ''} onChange={updateForm} maxLength={50} />
-              <Field label="Number plate" name="vehicle_plate" value={form.vehicle_plate || ''} onChange={updateForm} maxLength={30} />
-              <Field label="Home area" name="home_area" value={form.home_area || ''} onChange={updateForm} maxLength={150} />
+              <Field label="Make" name="make" value={form.make || ''} onChange={updateForm} required maxLength={80} />
+              <Field label="Model" name="model" value={form.model || ''} onChange={updateForm} required maxLength={80} />
+              <Field label="Year" name="year" value={form.year || ''} onChange={updateForm} type="number" min="1900" max={new Date().getFullYear() + 1} required />
+              <Field label="Color" name="color" value={form.color || ''} onChange={updateForm} required maxLength={50} />
+              <Field label="Number plate" name="plate" value={form.plate || ''} onChange={updateForm} required maxLength={30} />
+              <Field label="VIN (optional)" name="vin" value={form.vin || ''} onChange={updateForm} maxLength={17} />
+              <Field label="Registration expiry (optional)" name="registrationExpiry" value={form.registrationExpiry || ''} onChange={updateForm} type="date" />
+              <Field label="Notes (optional)" name="notes" value={form.notes || ''} onChange={updateForm} type="textarea" maxLength={500} />
             </div>
-            <button className="btn btn-primary" disabled={busy}>Save vehicle details</button>
+            <div className="workspace-actions">
+              <button className="btn btn-primary" disabled={busy}>{editingVehicleId ? 'Save changes' : 'Add vehicle'}</button>
+              {editingVehicleId && <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => { setEditingVehicleId(null); setForm({ make: '', model: '', year: '', color: '', plate: '', vin: '', registrationExpiry: '', notes: '' }) }}>Cancel edit</button>}
+            </div>
           </form>
         </section>
       )}
@@ -542,7 +573,15 @@ export default function ConnectedWorkspace({ role, section = [] }) {
             </fieldset>
             <fieldset className="workspace-preference-group">
               <legend>Preferred contact methods</legend>
-              {['call', 'sms', 'whatsapp'].map((method) => <label className="workspace-checkbox" key={method}><input type="checkbox" value={method} checked={(form.communication_preferences || []).includes(method)} onChange={toggleCommunication} /> {method}</label>)}
+              {['call', 'sms', 'whatsapp'].map((method) => <label className="workspace-checkbox" key={method}><input type="checkbox" value={method} checked={(form.communication_preferences || []).includes(method)} onChange={(event) => {
+                const { value, checked } = event.target
+                setForm((current) => ({
+                  ...current,
+                  communication_preferences: checked
+                    ? [...(current.communication_preferences || []), value]
+                    : (current.communication_preferences || []).filter((item) => item !== value),
+                }))
+              }} /> {method}</label>)}
             </fieldset>
             <button className="btn btn-primary" disabled={busy}>Save settings</button>
           </form>
