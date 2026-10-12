@@ -55,6 +55,18 @@ export default function RegisterForm() {
     }
   }
 
+  function normalizePhoneNumber(value) {
+    if (!value) return ''
+
+    const cleaned = value.toString().replace(/\s+/g, '').replace(/[^\d+]/g, '')
+    if (!cleaned) return ''
+
+    if (cleaned.startsWith('+233')) return `0${cleaned.slice(4)}`
+    if (cleaned.startsWith('233')) return `0${cleaned.slice(3)}`
+
+    return cleaned
+  }
+
   function parseSpecializations(value) {
     if (Array.isArray(value)) return value.filter(Boolean)
     if (!value) return []
@@ -142,24 +154,24 @@ export default function RegisterForm() {
       setLoading(true)
       const email = formData.email.trim()
       const fullName = formData.fullName.trim()
-      const phone = formData.phone.trim()
+      const primaryPhone = normalizePhoneNumber(formData.phone)
+      const emergencyPhone = normalizePhoneNumber(formData.emergencyContactPhone)
 
-      if (phone.length !== 10 || !phone.startsWith('0')) {
-        toast.error('Primary phone number must be exactly 10 digits starting with 0.')
+      if (primaryPhone.length !== 10) {
+        toast.error('Primary phone number must be exactly 10 digits.')
         setLoading(false)
         return
       }
 
-      if (formData.role === 'driver' && formData.emergencyContactPhone.trim()) {
-        const ePhone = formData.emergencyContactPhone.trim()
-        if (ePhone.length !== 10 || !ePhone.startsWith('0')) {
-          toast.error('Emergency contact phone number must be exactly 10 digits starting with 0.')
+      if (formData.role === 'driver' && emergencyPhone) {
+        if (emergencyPhone.length !== 10) {
+          toast.error('Emergency contact phone number must be exactly 10 digits.')
           setLoading(false)
           return
         }
       }
 
-      if (!fullName || !phone || !email || !formData.password) {
+      if (!fullName || !primaryPhone || !email || !formData.password) {
         toast.error('Please fill in your name, phone, email, and password.')
         return
       }
@@ -178,7 +190,7 @@ export default function RegisterForm() {
         email,
         password: formData.password,
         fullName,
-        phone,
+        phone: primaryPhone,
         role: formData.role,
       })
 
@@ -252,7 +264,14 @@ export default function RegisterForm() {
       router.replace('/auth/login')
     } catch (err) {
       console.error('[SIGNUP PORTAL FAULT]', err)
-      toast.error(err?.message || 'Registration failed')
+      const errorMessage = err?.message?.toLowerCase() || ''
+      if (errorMessage.includes('email rate limit exceeded')) {
+        toast.error(
+          'Supabase has temporarily limited signup emails for this project. Try again later, or configure custom SMTP in Supabase Authentication settings.'
+        )
+      } else {
+        toast.error(err?.message || 'Registration failed')
+      }
     } finally {
       document.body.style.pointerEvents = 'auto'
       setLoading(false)
@@ -418,9 +437,9 @@ export default function RegisterForm() {
                     onChange={(e) => updateField('emergencyContactPhone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
                     className="rounded-xl border-[#DDD0A8]" 
                   />
-                  {formData.emergencyContactPhone && (formData.emergencyContactPhone.length !== 10 || !formData.emergencyContactPhone.startsWith('0')) && (
+                  {formData.emergencyContactPhone && normalizePhoneNumber(formData.emergencyContactPhone).length !== 10 && (
                     <p className="mt-1 text-[10px] font-bold text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={12} className="shrink-0" /> Must be exactly 10 digits starting with 0.
+                      <AlertTriangle size={12} className="shrink-0" /> Must be exactly 10 digits.
                     </p>
                   )}
                 </div>
@@ -445,9 +464,9 @@ export default function RegisterForm() {
             onChange={(e) => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
             className="w-full h-[46px] rounded-xl border-[#DDD0A8] bg-[#FFFBF4]" 
           />
-          {formData.phone && (formData.phone.length !== 10 || !formData.phone.startsWith('0')) && (
+          {formData.phone && normalizePhoneNumber(formData.phone).length !== 10 && (
             <p className="mt-1 text-[10px] font-bold text-red-500 flex items-center gap-1">
-              <AlertTriangle size={12} className="shrink-0" /> Phone number must be exactly 10 digits starting with 0.
+              <AlertTriangle size={12} className="shrink-0" /> Phone number must be exactly 10 digits.
             </p>
           )}
         </div>

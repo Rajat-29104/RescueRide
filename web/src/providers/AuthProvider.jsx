@@ -215,6 +215,31 @@ if (profile?.role === 'driver') {
   }, [fetchUserProfile, setAuthState, setUser, setProfile, resetAuth, setLoading, setError])
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DEMO_AUTH === 'true') {
+      const user = {
+        id: '00000000-0000-4000-8000-000000000001',
+        email: 'driver1@test.com',
+        user_metadata: {
+          full_name: 'Demo Driver',
+          phone: '0240000000',
+          role: 'driver',
+        },
+      }
+
+      setAuthState({
+        user,
+        profile: {
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata.full_name,
+          phone: user.user_metadata.phone,
+          role: 'driver',
+        },
+      })
+      setNetworkStatus('degraded')
+      return
+    }
+
     let isMounted = true
 
     const initializeAuth = async () => {
