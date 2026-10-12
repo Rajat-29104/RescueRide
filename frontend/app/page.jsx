@@ -47,16 +47,40 @@ function Brand() {
 function MapComposition() {
   return (
     <div className="dispatch-visual" role="img" aria-label="Illustrative map showing a roadside assistance route">
-      <div className="map-grid" />
-      <svg className="map-contours" viewBox="0 0 600 500" fill="none" aria-hidden="true">
-        <path d="M-30 101C76 88 68 180 165 168S273 51 348 79s128 61 285 1" stroke="#75D5D4" strokeWidth="15" strokeLinecap="round" opacity=".22" />
-        <path d="M-20 327c92-37 117-1 174-52 66-59 113 5 171-30s88-100 157-81 92 35 144 3" stroke="#C1D5FF" strokeWidth="26" strokeLinecap="round" opacity=".16" />
-        <path d="M97-24c6 81 64 83 49 159s-50 100-1 167 73 75 70 219M360-30c-24 78 10 105 75 150s63 68 48 125-57 111-9 203" stroke="#8FB3FF" strokeWidth="2" strokeDasharray="5 9" opacity=".45" />
-        <path d="M286 237c42-66 86-97 147-99" stroke="#58DED2" strokeWidth="3" strokeDasharray="7 8" strokeLinecap="round" />
-        <path d="M270 247l17-15 4 23" stroke="#58DED2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="287" cy="238" r="30" stroke="#14C8C7" opacity=".24" />
-        <circle cx="287" cy="238" r="47" stroke="#14C8C7" opacity=".12" />
-      </svg>
+      <div className="map-terrain" aria-hidden="true">
+        <div className="map-grid" />
+        <div className="map-buildings">
+          <span className="map-building map-building-a" />
+          <span className="map-building map-building-b" />
+          <span className="map-building map-building-c" />
+          <span className="map-building map-building-d" />
+          <span className="map-building map-building-e" />
+          <span className="map-building map-building-f" />
+          <span className="map-building map-building-g" />
+          <span className="map-building map-building-h" />
+          <span className="map-building map-building-i" />
+          <span className="map-building map-building-j" />
+          <span className="map-building map-building-k" />
+          <span className="map-building map-building-l" />
+          <span className="map-building map-building-m" />
+          <span className="map-building map-building-n" />
+        </div>
+        <svg className="map-contours" viewBox="0 0 600 500" fill="none">
+          <path d="M-30 101C76 88 68 180 165 168S273 51 348 79s128 61 285 1" stroke="#09152D" strokeWidth="36" strokeLinecap="round" opacity=".54" />
+          <path d="M-30 101C76 88 68 180 165 168S273 51 348 79s128 61 285 1" stroke="#91A9C9" strokeWidth="28" strokeLinecap="round" opacity=".52" />
+          <path d="M-20 327c92-37 117-1 174-52 66-59 113 5 171-30s88-100 157-81 92 35 144 3" stroke="#09152D" strokeWidth="46" strokeLinecap="round" opacity=".58" />
+          <path d="M-20 327c92-37 117-1 174-52 66-59 113 5 171-30s88-100 157-81 92 35 144 3" stroke="#7188AE" strokeWidth="34" strokeLinecap="round" opacity=".48" />
+          <path d="M97-24c6 81 64 83 49 159s-50 100-1 167 73 75 70 219M360-30c-24 78 10 105 75 150s63 68 48 125-57 111-9 203" stroke="#8FB3FF" strokeWidth="2" strokeDasharray="5 9" opacity=".45" />
+          <path d="M-13 222h158m59-165v94m114 158h142m34-281v97M76 392h118m279-18h91" stroke="#9AB2D4" strokeWidth="8" strokeLinecap="round" opacity=".18" />
+          <path d="M-13 222h158m59-165v94m114 158h142m34-281v97M76 392h118m279-18h91" stroke="#D3DDF0" strokeWidth="1.5" strokeDasharray="3 8" opacity=".35" />
+          <path d="M286 237c42-66 86-97 147-99" stroke="#09152D" strokeWidth="13" strokeLinecap="round" opacity=".55" />
+          <path d="M286 237c42-66 86-97 147-99" stroke="#58DED2" strokeWidth="4" strokeLinecap="round" opacity=".42" />
+          <path className="map-route-line" d="M286 237c42-66 86-97 147-99" stroke="#58DED2" strokeWidth="3" strokeDasharray="7 8" strokeLinecap="round" />
+          <path d="M270 247l17-15 4 23" stroke="#58DED2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle className="map-pulse-ring map-pulse-ring-a" cx="287" cy="238" r="30" stroke="#14C8C7" opacity=".4" />
+          <circle className="map-pulse-ring map-pulse-ring-b" cx="287" cy="238" r="47" stroke="#14C8C7" opacity=".26" />
+        </svg>
+      </div>
       <span className="map-label map-label-a">North approach</span>
       <span className="map-label map-label-b">Service corridor</span>
       <span className="map-label map-label-c">Roadside route</span>
@@ -159,6 +183,38 @@ export default function HomePage() {
               <p>Mechanics can manage assistance requests and coordinate each job in one workspace.</p>
             </div>
             <Link className="btn" href="/auth/register?role=mechanic">Explore the mechanic workspace <ArrowDownRight size={16} /></Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="section about-section">
+        <div className="container-shell">
+          <div className="section-heading about-section-heading">
+            <div className="eyebrow">Our mission</div>
+            <h2>About Us</h2>
+            <p>Learn how RescueRide is bringing drivers and roadside mechanics into a clearer, more connected service experience.</p>
+          </div>
+          <div className="about-panel">
+            <div className="about-copy">
+              <h2>Roadside help should feel more connected.</h2>
+              <p>
+                RescueRide is built to make the moments after a breakdown easier to navigate. We bring drivers and mechanics into one clear flow for requesting help, coordinating service, and keeping everyone informed.
+              </p>
+            </div>
+            <div className="about-values" aria-label="What guides RescueRide">
+              <div className="about-value">
+                <span className="about-value-icon"><MapPin size={18} /></span>
+                <div><strong>Clear context</strong><span>Location and request details stay together.</span></div>
+              </div>
+              <div className="about-value">
+                <span className="about-value-icon"><Wrench size={18} /></span>
+                <div><strong>Connected people</strong><span>Drivers and mechanics can follow the same service journey.</span></div>
+              </div>
+              <div className="about-value">
+                <span className="about-value-icon"><ShieldCheck size={18} /></span>
+                <div><strong>Safety in mind</strong><span>Designed with roadside communication and safety in view.</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

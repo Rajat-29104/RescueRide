@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireDriver } from '@/lib/rbac'
-import { validateSosPayload, validateSosStatusTransition } from '@/lib/safety'
+import { SOS_STATUS, validateSosPayload } from '@/lib/safety'
 
 export async function POST(request) {
   try {
@@ -29,6 +29,9 @@ export async function POST(request) {
     }
 
     const { requestId, status, latitude, longitude, message } = validation.normalized
+    if (status !== SOS_STATUS.RAISED) {
+      return NextResponse.json({ error: 'A new SOS event must start with status RAISED.' }, { status: 400 })
+    }
 
     const { data: requestData, error: requestError } = await supabase
       .from('rescue_requests')
@@ -47,11 +50,6 @@ export async function POST(request) {
     const allowedOwner = [requestData.driver_id, requestData.mechanic_id].includes(user.id)
     if (!allowedOwner) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const transition = validateSosStatusTransition('RAISED', status)
-    if (!transition.valid) {
-      return NextResponse.json({ error: transition.reason }, { status: 400 })
     }
 
     const eventInsert = {
@@ -78,15 +76,9 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message || 'Failed to create SOS event.' }, { status: 500 })
     }
 
-    if (status === 'RESOLVED' && transition.nextRequestStatus) {
-      await supabase
-        .from('rescue_requests')
-        .update({ status: transition.nextRequestStatus })
-        .eq('id', requestId)
-    }
-
     return NextResponse.json({ sos: data }, { status: 201 })
   } catch (error) {
+    console.error('[POST /api/safety/sos]', error)
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 })
   }
 }

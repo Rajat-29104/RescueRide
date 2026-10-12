@@ -1,5 +1,5 @@
-import AuthPreview from '../../../components/AuthPreview'
+import AuthForm from '../../../components/AuthForm'
 
 export default function LoginPage() {
-  return <AuthPreview variant="login" />
+  return <AuthForm variant="login" />
 }

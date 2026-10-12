@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   Activity,
   Bell,
@@ -16,16 +17,17 @@ import {
   MapPinned,
   Settings2,
   ShieldCheck,
-  UserRound,
   Users,
   Wrench,
+  LogOut,
 } from 'lucide-react'
+import { getSupabaseBrowserClient } from '../lib/supabase'
 
 const roleDetails = {
   driver: {
     title: 'Driver workspace',
     items: [
-      ['Overview', '/dashboard/driver', Home],
+      ['Dashboard', '/dashboard/driver', Home],
       ['Request assistance', '/dashboard/driver/requests/new', LifeBuoy],
       ['Explore providers', '/dashboard/driver/explore', Compass],
       ['My requests', '/dashboard/driver/requests', ClipboardList],
@@ -38,7 +40,7 @@ const roleDetails = {
   mechanic: {
     title: 'Mechanic workspace',
     items: [
-      ['Overview', '/dashboard/mechanic', Home],
+      ['Dashboard', '/dashboard/mechanic', Home],
       ['Incoming requests', '/dashboard/mechanic/requests', ClipboardList],
       ['Active jobs', '/dashboard/mechanic/jobs', Wrench],
       ['Job history', '/dashboard/mechanic/history', History],
@@ -50,7 +52,7 @@ const roleDetails = {
   admin: {
     title: 'Administration',
     items: [
-      ['Overview', '/dashboard/admin', Gauge],
+      ['Dashboard', '/dashboard/admin', Gauge],
       ['People & access', '/dashboard/admin/users', Users],
       ['Mechanic verification', '/dashboard/admin/mechanics', ShieldCheck],
       ['Requests', '/dashboard/admin/requests', ClipboardList],
@@ -63,8 +65,106 @@ const roleDetails = {
 
 export default function AppShell({ role, children }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [account, setAccount] = useState(null)
+  const [authState, setAuthState] = useState(() => {
+    const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    return configured
+      ? { loading: true, error: '' }
+      : { loading: false, error: 'Authentication is not configured. Set the public Supabase URL and publishable key for the frontend.' }
+  })
+  const [signingOut, setSigningOut] = useState(false)
   const details = roleDetails[role]
   const activeItem = (href) => href === pathname || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`))
+
+  useEffect(() => {
+    let active = true
+    let authSubscription
+    let supabase
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return undefined
+
+    try {
+      supabase = getSupabaseBrowserClient()
+    } catch {
+      return undefined
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        router.replace('/auth/login')
+      }
+    })
+    authSubscription = data.subscription
+
+    async function verifyAccount() {
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) {
+          router.replace('/auth/login')
+          return
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (profileError) throw profileError
+
+        const accountRole = profile?.role || user.user_metadata?.role
+        if (!['driver', 'mechanic', 'admin'].includes(accountRole)) {
+          throw new Error('Your account role could not be verified. Contact RescueRide support.')
+        }
+        if (accountRole !== role) {
+          router.replace(`/dashboard/${accountRole}`)
+          return
+        }
+        if (!active) return
+
+        setAccount({ user, name: profile?.full_name || user.user_metadata?.full_name || user.email })
+        setAuthState({ loading: false, error: '' })
+      } catch (error) {
+        if (active) setAuthState({ loading: false, error: error.message || 'Could not verify your account.' })
+      }
+    }
+
+    verifyAccount()
+
+    return () => {
+      active = false
+      authSubscription?.unsubscribe()
+    }
+  }, [role, router])
+
+  async function signOut() {
+    setSigningOut(true)
+    try {
+      const { error } = await getSupabaseBrowserClient().auth.signOut()
+      if (error) throw error
+      router.replace('/auth/login')
+      router.refresh()
+    } catch (error) {
+      setAuthState({ loading: false, error: error.message || 'Could not sign out.' })
+      setSigningOut(false)
+    }
+  }
+
+  if (authState.loading) {
+    return <main className="auth-page"><div className="surface panel" role="status">Checking your RescueRide account…</div></main>
+  }
+
+  if (authState.error) {
+    return (
+      <main className="auth-page">
+        <section className="surface panel">
+          <div className="form-notice form-notice-error" role="alert">{authState.error}</div>
+          <Link className="btn btn-primary" href="/auth/login" style={{ marginTop: 16 }}>Sign in again</Link>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <div className="app-layout">
@@ -83,9 +183,9 @@ export default function AppShell({ role, children }) {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="preview-card">
-            <strong>Standalone preview</strong>
-            <p>Live account data and actions require the backend connection.</p>
+          <div className="account-card">
+            <strong>{account?.name}</strong>
+            <p>{account?.user.email}</p>
           </div>
         </div>
       </aside>
@@ -94,10 +194,10 @@ export default function AppShell({ role, children }) {
         <header className="app-topbar">
           <div className="topbar-label">RescueRide <span aria-hidden="true">/</span> {details.title}</div>
           <div className="topbar-actions">
-            <span className="status-chip"><span className="status-dot" /> Preview mode</span>
-            <Link className="icon-button" href="/" aria-label="Return to the public homepage" title="Return to homepage">
-              <UserRound size={17} />
-            </Link>
+            <span className="status-chip"><span className="status-dot" /> Signed in</span>
+            <button className="icon-button" type="button" onClick={signOut} disabled={signingOut} aria-label="Sign out" title="Sign out">
+              <LogOut size={17} />
+            </button>
           </div>
         </header>
         <main className="app-content">{children}</main>

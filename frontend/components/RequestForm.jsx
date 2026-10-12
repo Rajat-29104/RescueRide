@@ -14,11 +14,13 @@ const serviceTypes = [
   ['other', 'Other assistance'],
 ]
 
-export default function RequestForm() {
+export default function RequestForm({ initialMechanicId = '' }) {
+  const [vehicle, setVehicle] = useState({})
+  const [vehicleProfileError, setVehicleProfileError] = useState('')
   const [mechanics, setMechanics] = useState([])
   const [mechanicsState, setMechanicsState] = useState({ loading: true, error: '', requiresSignIn: false })
-  const [dispatchMode, setDispatchMode] = useState('automatic')
-  const [mechanicId, setMechanicId] = useState('')
+  const [dispatchMode, setDispatchMode] = useState(initialMechanicId ? 'mechanic' : 'automatic')
+  const [mechanicId, setMechanicId] = useState(initialMechanicId)
   const [location, setLocation] = useState(null)
   const [locating, setLocating] = useState(false)
   const [formError, setFormError] = useState('')
@@ -27,6 +29,24 @@ export default function RequestForm() {
 
   useEffect(() => {
     let active = true
+
+    async function loadVehicle() {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError) throw authError
+        if (!user) return
+        const { data, error } = await supabase
+          .from('driver_profiles')
+          .select('vehicle_make, vehicle_model, vehicle_year, vehicle_color, vehicle_plate')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (error) throw error
+        if (active) setVehicle(data || {})
+      } catch (error) {
+        if (active) setVehicleProfileError(error.message || 'Saved vehicle details could not be loaded.')
+      }
+    }
 
     async function loadMechanics() {
       try {
@@ -59,8 +79,21 @@ export default function RequestForm() {
     }
 
     loadMechanics()
+    loadVehicle()
     return () => { active = false }
   }, [])
+
+  function updateVehicle(event) {
+    const { name, value } = event.target
+    const profileField = {
+      vehicleMake: 'vehicle_make',
+      vehicleModel: 'vehicle_model',
+      vehicleYear: 'vehicle_year',
+      vehicleColor: 'vehicle_color',
+      vehiclePlate: 'vehicle_plate',
+    }[name]
+    setVehicle((current) => ({ ...current, [profileField]: value }))
+  }
 
   function locateDriver() {
     setFormError('')
@@ -183,19 +216,20 @@ export default function RequestForm() {
 
       <div className="request-form-section">
         <div className="request-section-title"><span>03</span><div><h2>Vehicle details</h2><p>Optional, but helps the mechanic identify your vehicle.</p></div></div>
+        {vehicleProfileError && <div className="form-notice form-notice-error" role="alert">{vehicleProfileError} You can still enter the vehicle details below.</div>}
         <div className="request-vehicle-grid">
-          <div className="field"><label htmlFor="vehicleMake">Make</label><input id="vehicleMake" name="vehicleMake" maxLength={80} placeholder="e.g. Toyota" /></div>
-          <div className="field"><label htmlFor="vehicleModel">Model</label><input id="vehicleModel" name="vehicleModel" maxLength={80} placeholder="e.g. Corolla" /></div>
-          <div className="field"><label htmlFor="vehicleYear">Year</label><input id="vehicleYear" name="vehicleYear" type="number" min="1970" max={new Date().getFullYear()} placeholder="e.g. 2020" /></div>
-          <div className="field"><label htmlFor="vehicleColor">Color</label><input id="vehicleColor" name="vehicleColor" maxLength={50} placeholder="e.g. Silver" /></div>
-          <div className="field"><label htmlFor="vehiclePlate">Number plate</label><input id="vehiclePlate" name="vehiclePlate" maxLength={30} placeholder="Vehicle registration" /></div>
+          <div className="field"><label htmlFor="vehicleMake">Make</label><input id="vehicleMake" name="vehicleMake" maxLength={80} value={vehicle.vehicle_make || ''} onChange={updateVehicle} placeholder="e.g. Toyota" /></div>
+          <div className="field"><label htmlFor="vehicleModel">Model</label><input id="vehicleModel" name="vehicleModel" maxLength={80} value={vehicle.vehicle_model || ''} onChange={updateVehicle} placeholder="e.g. Corolla" /></div>
+          <div className="field"><label htmlFor="vehicleYear">Year</label><input id="vehicleYear" name="vehicleYear" type="number" min="1970" max={new Date().getFullYear()} value={vehicle.vehicle_year || ''} onChange={updateVehicle} placeholder="e.g. 2020" /></div>
+          <div className="field"><label htmlFor="vehicleColor">Color</label><input id="vehicleColor" name="vehicleColor" maxLength={50} value={vehicle.vehicle_color || ''} onChange={updateVehicle} placeholder="e.g. Silver" /></div>
+          <div className="field"><label htmlFor="vehiclePlate">Number plate</label><input id="vehiclePlate" name="vehiclePlate" maxLength={30} value={vehicle.vehicle_plate || ''} onChange={updateVehicle} placeholder="Vehicle registration" /></div>
         </div>
       </div>
 
       <div className="request-form-section">
         <div className="request-section-title"><span>04</span><div><h2>Choose dispatch</h2><p>Automatic matching finds nearby verified providers, or choose one directly.</p></div></div>
         {mechanicsState.requiresSignIn && (
-          <div className="preview-notice" role="status">
+          <div className="form-notice" role="status">
             Sign in with a driver account to load verified mechanics and submit a real request. <Link href="/auth/login">Sign in</Link>
           </div>
         )}
@@ -242,7 +276,7 @@ export default function RequestForm() {
         )}
       </div>
 
-      {formError && <div className="preview-notice preview-notice-error" role="alert">{formError}</div>}
+      {formError && <div className="form-notice form-notice-error" role="alert">{formError}</div>}
       <div className="request-form-footer">
         <p><ShieldCheck size={15} /> Your request is sent to RescueRide only after you submit it.</p>
         <button className="btn btn-primary" type="submit" disabled={submitting || mechanicsState.loading && dispatchMode === 'mechanic'}>

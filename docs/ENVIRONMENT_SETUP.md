@@ -1,56 +1,76 @@
-# RescueRide Environment Setup
+# RescueRide deployment setup
 
-## Required local environment
+RescueRide currently has two Next.js applications:
 
-Use a local `.env.local` in the `web/` directory with the following values where applicable:
+- `frontend/` is the standalone production UI. It provides Supabase authentication, role-protected driver/mechanic/admin workspaces, and a same-origin API proxy.
+- `web/` is the existing backend and integrated application. Deploy it separately; the standalone UI forwards its allowlisted requests to this service.
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-OPENROUTER_API_KEY=your_openrouter_key
-RESEND_API_KEY=your_resend_key
-```
+## Local development
 
-For the independent frontend, create `frontend/.env.local` with the public Supabase project values and the backend origin:
+Create `web/.env.local` for the backend and `frontend/.env.local` for the standalone UI. Use the same Supabase project in both apps.
+
+`frontend/.env.local`:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_publishable_key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-publishable-key
 RESCUERIDE_BACKEND_URL=http://localhost:3000
 ```
 
-The frontend request flow requires a running `web/` backend. Keep `SUPABASE_SERVICE_ROLE_KEY` only in `web/.env.local` (or the backend host's secret store); never put it in the frontend environment. Restart both development servers after changing environment values.
-
-## Install and run
+`web/.env.local` must include:
 
 ```bash
-cd E:\RescueRide\web
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret
+```
+
+Keep `SUPABASE_SERVICE_ROLE_KEY` only in the backend's environment or secret store. Never add it to `frontend/.env.local`, expose it as a `NEXT_PUBLIC_` variable, or commit it.
+
+Run the backend and frontend in separate terminals:
+
+```powershell
+Set-Location E:\RescueRide\web
 npm install
 npm run dev
 ```
 
-In a second terminal:
-
-```bash
-cd E:\RescueRide\frontend
+```powershell
+Set-Location E:\RescueRide\frontend
 npm install
 npm run dev -- --port 3001
 ```
 
-## Verify backend behavior
+## Production deployment
 
-```bash
-cd E:\RescueRide\web
-npm test
+Deploy `web/` as the backend service and `frontend/` as the UI service. For a Next.js host such as Vercel, set each application's root directory to its respective folder and use its existing `npm run build` command.
+
+Configure these variables in the **frontend service**:
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | The production Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | That project's publishable/anon key |
+| `RESCUERIDE_BACKEND_URL` | The HTTPS origin of the deployed `web/` backend, without an `/api` suffix |
+
+Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in the **backend service**. Add any other backend-only provider keys there, not in the frontend. Never use localhost as the production backend URL.
+
+The auth redirect URL in Supabase must include the production frontend's `/auth/login` and `/auth/reset-password` URLs. Apply the repository's Supabase migrations to the same project before enabling request dispatch, safety, or incident workflows. Keep Row Level Security enabled; admin APIs additionally require the backend service-role key.
+
+After configuring host variables, redeploy both services. Verify login and account role routing, request submission/history, mechanic dispatch/status changes, and admin views using test accounts for each role. Do not validate production by enabling demo auth or adding fake operational data.
+
+## Validation
+
+```powershell
+Set-Location E:\RescueRide\frontend
 npm run lint
 npm run build
 ```
 
-## Notes
+```powershell
+Set-Location E:\RescueRide\web
+npm test
+npm run build
+```
 
-- Do not commit secrets or production credentials into the repository.
-- The live backend should be validated against a real Supabase project before relying on production behavior.
-- The current local workspace is sufficient for static validation and unit tests, but live features require credentials and a deployed database.
+Live workflows require valid Supabase credentials, the backend service secret, correct Supabase policies/schema, and accounts with the matching roles. A successful local build alone does not confirm those production integrations.
