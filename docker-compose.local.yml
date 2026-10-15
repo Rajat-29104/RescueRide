@@ -1,0 +1,22 @@
+services:
+  database:
+    image: postgis/postgis:16-3.5
+    container_name: roadrescue-local-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: roadrescue
+      POSTGRES_USER: roadrescue
+      POSTGRES_PASSWORD: roadrescue_local_dev
+    ports:
+      - "55432:5432"
+    volumes:
+      - roadrescue_postgres_data:/var/lib/postgresql/data
+      - ./scripts/local-postgres-init.sql:/docker-entrypoint-initdb.d/001-local-postgres-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roadrescue -d roadrescue"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  roadrescue_postgres_data:

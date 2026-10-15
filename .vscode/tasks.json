@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run RoadRescue web app",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"--prefix",
+				"web",
+				"run",
+				"dev"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
