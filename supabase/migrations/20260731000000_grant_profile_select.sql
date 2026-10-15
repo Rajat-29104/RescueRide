@@ -1,1 +1,0 @@
-GRANT SELECT ON public.profiles TO authenticated;
